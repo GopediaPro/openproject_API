@@ -1,2 +1,5 @@
 .env
 users.xlsx
+*/__pycache__
+*.xlsx
+.DS_Store
