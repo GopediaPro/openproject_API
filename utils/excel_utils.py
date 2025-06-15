@@ -79,4 +79,21 @@ def read_parent_patch_from_excel(excel_file):
             "parent_id": int(row['parent_id'])
         }
         patches.append(patch)
-    return patches 
+    return patches
+
+def write_work_packages_to_excel(work_packages, excel_file):
+    """
+    work_packages: list of dicts with keys matching the columns
+    excel_file: output file path
+    Columns: work_package_id, subject, project_id, author_id, type_id, status_id, priority_id, assignee_id, category_id, start_date, due_date, duration, description, lock_version, parent_id
+    """
+    columns = [
+        "work_package_id", "subject", "project_id", "author_id", "type_id", "status_id", "priority_id", "assignee_id", "category_id", "start_date", "due_date", "duration", "description", "lock_version", "parent_id"
+    ]
+    df = pd.DataFrame(work_packages)
+    # Ensure all columns exist
+    for col in columns:
+        if col not in df.columns:
+            df[col] = None
+    df = df[columns]  # Reorder columns
+    df.to_excel(excel_file, index=False) 

@@ -9,6 +9,7 @@ from endpoints.endpoints import get_user_endpoint, get_group_endpoint, get_work_
 from payloads.user_payloads import build_user_payload
 from payloads.work_package_payload import build_work_package_payload
 from utils.excel_utils import read_work_packages_from_excel, read_parent_patch_from_excel
+from workpackages.get_work_packages import export_work_packages_to_excel
 
 def get_env():
     load_dotenv()
@@ -160,6 +161,12 @@ def bulk_patch_work_package_parents_cmd(
             print(f"❌ {idx+1}번째 parent patch 실패 (work_package_id={patch['work_package_id']}): {resp.status_code if resp is not None else 'No Response'}")
             if resp is not None:
                 print(resp.text)
+
+@app.command("export-work-packages")
+def export_work_packages_cmd():
+    """Export all work packages to workpackages.xlsx"""
+    openproject_url, headers = get_env()
+    export_work_packages_to_excel(openproject_url, headers)
 
 if __name__ == "__main__":
     app()
