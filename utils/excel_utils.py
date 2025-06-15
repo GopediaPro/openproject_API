@@ -59,4 +59,24 @@ def read_work_packages_from_excel(excel_file):
             "description": str(row['description']) if 'description' in df.columns and not pd.isna(row.get('description')) else ""
         }
         work_packages.append(wp)
-    return work_packages 
+    return work_packages
+
+def read_parent_patch_from_excel(excel_file):
+    """
+    엑셀 파일에서 parent patch 정보를 읽어 리스트로 반환
+    컬럼: work_package_id, lock_version, parent_id
+    """
+    df = pd.read_excel(excel_file)
+    required_columns = ['work_package_id', 'lock_version', 'parent_id']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"필수 컬럼 누락: {missing_columns}")
+    patches = []
+    for _, row in df.iterrows():
+        patch = {
+            "work_package_id": int(row['work_package_id']),
+            "lock_version": int(row['lock_version']),
+            "parent_id": int(row['parent_id'])
+        }
+        patches.append(patch)
+    return patches 

@@ -3,12 +3,12 @@ import typer
 from dotenv import load_dotenv
 from auth.auth import get_auth_headers
 from users.create_user import create_user, bulk_create_users
-from workpackages.create_work_package import create_work_package, bulk_create_work_packages
+from workpackages.create_work_package import create_work_package, bulk_create_work_packages, bulk_patch_work_package_parents
 from datetime import datetime
 from endpoints.endpoints import get_user_endpoint, get_group_endpoint, get_work_package_endpoint
 from payloads.user_payloads import build_user_payload
 from payloads.work_package_payload import build_work_package_payload
-from utils.excel_utils import read_work_packages_from_excel
+from utils.excel_utils import read_work_packages_from_excel, read_parent_patch_from_excel
 
 def get_env():
     load_dotenv()
@@ -137,6 +137,27 @@ def bulk_create_work_packages_cmd():
             print(f"✅ {idx+1}번째 Work package 생성 성공!")
         else:
             print(f"❌ {idx+1}번째 Work package 생성 실패: {resp.status_code if resp is not None else 'No Response'}")
+            if resp is not None:
+                print(resp.text)
+
+@app.command("bulk-patch-work-package-parents")
+def bulk_patch_work_package_parents_cmd(
+    excel: str = typer.Option("parent_patches.xlsx", help="Path to Excel file with parent patch info")
+):
+    """Bulk patch work package parents from Excel (work_package_id, lock_version, parent_id)"""
+    openproject_url, headers = get_env()
+    try:
+        parent_patches = read_parent_patch_from_excel(excel)
+    except Exception as e:
+        print(f"❌ Excel 파일 읽기 오류: {e}")
+        return
+    responses = bulk_patch_work_package_parents(openproject_url, headers, parent_patches)
+    for idx, resp in enumerate(responses):
+        patch = parent_patches[idx]
+        if resp is not None and resp.status_code in (200, 201):
+            print(f"✅ {idx+1}번째 parent patch 성공 (work_package_id={patch['work_package_id']})!")
+        else:
+            print(f"❌ {idx+1}번째 parent patch 실패 (work_package_id={patch['work_package_id']}): {resp.status_code if resp is not None else 'No Response'}")
             if resp is not None:
                 print(resp.text)
 

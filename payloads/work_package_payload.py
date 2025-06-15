@@ -28,4 +28,17 @@ def build_work_package_payload(subject, project_id, type_id=1, status_id=1, prio
     }
     payload["_links"] = {k: v for k, v in payload["_links"].items() if v is not None}
     payload = {k: v for k, v in payload.items() if v is not None}
-    return payload 
+    return payload
+
+def build_parent_patch_payload(lock_version, parent_id):
+    """
+    Build a payload for setting the parent of a work package.
+    """
+    return {
+        "lockVersion": lock_version,
+        "_links": {
+            "parent": {
+                "href": f"/api/v3/work_packages/{parent_id}"
+            }
+        }
+    } 
