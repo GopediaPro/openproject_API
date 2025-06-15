@@ -5,6 +5,10 @@ from auth.auth import get_auth_headers
 from users.create_user import create_user, bulk_create_users
 from workpackages.create_work_package import create_work_package
 from datetime import datetime
+from endpoints.user_endpoints import get_user_endpoint, get_group_endpoint
+from payloads.user_payloads import build_user_payload
+from endpoints.work_package_endpoints import get_work_package_endpoint
+from payloads.work_package_payload import build_work_package_payload
 
 def get_env():
     load_dotenv()
@@ -26,17 +30,9 @@ def create_user_cmd(
 ):
     """Create a single user (optionally add to group)"""
     openproject_url, headers = get_env()
-    api_endpoint = f"{openproject_url}/api/v3/users"
-    group_api_endpoint = f"{openproject_url}/api/v3/groups"
-    user_payload = {
-        "login": login,
-        "email": email,
-        "firstName": first_name,
-        "lastName": last_name,
-        "password": password,
-        "admin": False,
-        "status": "active"
-    }
+    api_endpoint = get_user_endpoint(openproject_url)
+    group_api_endpoint = get_group_endpoint(openproject_url)
+    user_payload = build_user_payload(login, email, first_name, last_name, password)
     response = create_user(api_endpoint, user_payload, headers)
     if response is not None and response.status_code == 201:
         print("✅ 사용자 생성 성공!")
@@ -58,8 +54,8 @@ def bulk_create_users_cmd(
 ):
     """Create multiple users from Excel (optionally add to group)"""
     openproject_url, headers = get_env()
-    api_endpoint = f"{openproject_url}/api/v3/users"
-    group_api_endpoint = f"{openproject_url}/api/v3/groups"
+    api_endpoint = get_user_endpoint(openproject_url)
+    group_api_endpoint = get_group_endpoint(openproject_url)
     # group_id가 있으면 group_api_endpoint를 넘기고, 없으면 기존 로직(선택) 유지
     if group_id:
         # group_id를 바로 넘기기 위해 bulk_create_users를 약간 수정해야 할 수도 있음
@@ -84,41 +80,21 @@ def create_work_package_cmd(
 ):
     """Create a single work package"""
     openproject_url, headers = get_env()
-    api_endpoint = f"{openproject_url}/api/v3/work_packages"
+    api_endpoint = get_work_package_endpoint(openproject_url)
 
-    # duration 계산
-    duration = None
-    if start_date and due_date:
-        try:
-            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-            due_dt = datetime.strptime(due_date, "%Y-%m-%d")
-            days = (due_dt - start_dt).days + 1
-            duration = f"P{days}D"
-        except Exception as e:
-            print(f"❌ 날짜 형식 오류: {e}")
-            return
-
-    payload = {
-        "subject": subject,
-        "scheduleManually": True,
-        "startDate": start_date,
-        "dueDate": due_date,
-        "duration": duration,
-        "_links": {
-            "category": {"href": f"/api/v3/categories/{category_id}"} if category_id else None,
-            "type": {"href": f"/api/v3/types/{type_id}"},
-            "priority": {"href": f"/api/v3/priorities/{priority_id}"},
-            "project": {"href": f"/api/v3/projects/{project_id}"},
-            "status": {"href": f"/api/v3/statuses/{status_id}"},
-            "author": {"href": f"/api/v3/users/{author_id}"},
-            "assignee": {"href": f"/api/v3/users/{assignee_id}"} if assignee_id else None,
-        },
-        "description": {"raw": description}
-    }
-    # _links에서 None 값 제거
-    payload["_links"] = {k: v for k, v in payload["_links"].items() if v is not None}
-    # payload에서 None 값 제거
-    payload = {k: v for k, v in payload.items() if v is not None}
+    payload = build_work_package_payload(
+        subject=subject,
+        project_id=project_id,
+        type_id=type_id,
+        status_id=status_id,
+        priority_id=priority_id,
+        author_id=author_id,
+        assignee_id=assignee_id,
+        category_id=category_id,
+        start_date=start_date,
+        due_date=due_date,
+        description=description
+    )
 
     response = create_work_package(api_endpoint, payload, headers)
     if response is not None and response.status_code == 201:
