@@ -131,7 +131,7 @@ def bulk_create_work_packages_cmd():
             description=wp.get("description", "")
         ) for wp in work_packages_data
     ]
-    responses = bulk_create_work_packages(api_endpoint, headers, payloads)
+    responses = bulk_create_work_packages(api_endpoint, headers, payloads, excel_file=excel_file)
     for idx, resp in enumerate(responses):
         if resp is not None and resp.status_code == 201:
             print(f"✅ {idx+1}번째 Work package 생성 성공!")
