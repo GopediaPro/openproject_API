@@ -13,4 +13,18 @@ def create_work_package(api_endpoint, payload, headers):
         return response
     except requests.exceptions.RequestException as e:
         print(f"❌ 네트워크 오류: {e}")
-        return None 
+        return None
+
+def bulk_create_work_packages(api_endpoint, headers, work_packages):
+    """
+    여러 개의 work package를 생성하는 함수
+    :param api_endpoint: work_packages API endpoint
+    :param headers: 인증 및 Content-Type 헤더
+    :param work_packages: work package payload dict의 리스트
+    :return: 각 work package 생성 결과 리스트
+    """
+    results = []
+    for payload in work_packages:
+        resp = create_work_package(api_endpoint, payload, headers)
+        results.append(resp)
+    return results 

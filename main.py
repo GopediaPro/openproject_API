@@ -3,12 +3,12 @@ import typer
 from dotenv import load_dotenv
 from auth.auth import get_auth_headers
 from users.create_user import create_user, bulk_create_users
-from workpackages.create_work_package import create_work_package
+from workpackages.create_work_package import create_work_package, bulk_create_work_packages
 from datetime import datetime
-from endpoints.user_endpoints import get_user_endpoint, get_group_endpoint
+from endpoints.endpoints import get_user_endpoint, get_group_endpoint, get_work_package_endpoint
 from payloads.user_payloads import build_user_payload
-from endpoints.work_package_endpoints import get_work_package_endpoint
 from payloads.work_package_payload import build_work_package_payload
+from utils.excel_utils import read_work_packages_from_excel
 
 def get_env():
     load_dotenv()
@@ -104,6 +104,41 @@ def create_work_package_cmd(
         print(f"❌ Work package 생성 실패: {response.status_code if response is not None else 'No Response'}")
         if response is not None:
             print(response.text)
+
+@app.command("bulk-create-work-packages")
+def bulk_create_work_packages_cmd():
+    """Create multiple work packages from workpackages.xlsx"""
+    openproject_url, headers = get_env()
+    api_endpoint = get_work_package_endpoint(openproject_url)
+    excel_file = "workpackages.xlsx"
+    try:
+        work_packages_data = read_work_packages_from_excel(excel_file)
+    except Exception as e:
+        print(f"❌ Excel 파일 읽기 오류: {e}")
+        return
+    payloads = [
+        build_work_package_payload(
+            subject=wp["subject"],
+            project_id=wp["project_id"],
+            type_id=wp.get("type_id", 1),
+            status_id=wp.get("status_id", 1),
+            priority_id=wp.get("priority_id", 9),
+            author_id=wp["author_id"],
+            assignee_id=wp.get("assignee_id"),
+            category_id=wp.get("category_id"),
+            start_date=wp.get("start_date"),
+            due_date=wp.get("due_date"),
+            description=wp.get("description", "")
+        ) for wp in work_packages_data
+    ]
+    responses = bulk_create_work_packages(api_endpoint, headers, payloads)
+    for idx, resp in enumerate(responses):
+        if resp is not None and resp.status_code == 201:
+            print(f"✅ {idx+1}번째 Work package 생성 성공!")
+        else:
+            print(f"❌ {idx+1}번째 Work package 생성 실패: {resp.status_code if resp is not None else 'No Response'}")
+            if resp is not None:
+                print(resp.text)
 
 if __name__ == "__main__":
     app()
