@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import datetime
 
 def read_users_from_excel(excel_file):
     """
@@ -36,6 +37,14 @@ def read_work_packages_from_excel(excel_file):
         raise ValueError(f"필수 컬럼 누락: {missing_columns}")
     work_packages = []
     for _, row in df.iterrows():
+        def format_date(val):
+            if pd.isna(val):
+                return None
+            if isinstance(val, datetime):
+                return val.strftime('%Y-%m-%d')
+            if isinstance(val, str) and len(val) >= 10:
+                return val[:10]
+            return str(val)
         wp = {
             "subject": row['subject'],
             "project_id": int(row['project_id']),
@@ -45,8 +54,8 @@ def read_work_packages_from_excel(excel_file):
             "author_id": int(row['author_id']),
             "assignee_id": int(row['assignee_id']) if 'assignee_id' in df.columns and not pd.isna(row.get('assignee_id')) else None,
             "category_id": int(row['category_id']) if 'category_id' in df.columns and not pd.isna(row.get('category_id')) else None,
-            "start_date": str(row['start_date']) if 'start_date' in df.columns and not pd.isna(row.get('start_date')) else None,
-            "due_date": str(row['due_date']) if 'due_date' in df.columns and not pd.isna(row.get('due_date')) else None,
+            "start_date": format_date(row['start_date']) if 'start_date' in df.columns else None,
+            "due_date": format_date(row['due_date']) if 'due_date' in df.columns else None,
             "description": str(row['description']) if 'description' in df.columns and not pd.isna(row.get('description')) else ""
         }
         work_packages.append(wp)
